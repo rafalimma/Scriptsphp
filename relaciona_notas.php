@@ -18,6 +18,7 @@ $_SESSION["HTTP_ROOT"] = "http://" . str_replace("index.php", "", $_SERVER["HTTP
 $_SESSION["HTTP_ROOT"] = "http://" . str_replace("relaciona_notas.php", "", $_SERVER["HTTP_HOST"] . $_SERVER["PHP_SELF"]);
 $_SESSION["CONFIG_FILE"] = $_SESSION["DIR_ROOT"] . "/config/config.php";
 
+@require_once('obterdanfe.php');
 @require_once($_SESSION["CONFIG_FILE"]);
 while (ob_get_level()) {
     ob_end_flush();
@@ -31,8 +32,6 @@ if ($_SESSION["ss_id_usuario"] == 1 && intval($_registrosConfSistema_[0]['integr
 }
 
 echo "<br>".$_SESSION["ss_id_usuario"]."<br>";
-
-echo "<h1> teste do script </h1>";
 
 function obterDocumntosFiscais() {
    global $_registrosConfSistema_;
@@ -168,11 +167,11 @@ function obterDocumntosFiscais() {
 
    $data_body_array = [
          "SearchTerm" => null,
-         "DateType" => "date", 
-         "BeginDate" => "25-10-25", 
-         "EndDate" => "25-11-02",        
+         "DateType" => null, 
+         "BeginDate" => null, 
+         "EndDate" => null,        
          "EmittedByTerc" => true,
-         "PerPage" => 10,
+         "PerPage" => 5,
          "CurrentPage" => 1,
          "DataNodeFocus" => null,
          "FiliaisCNPJ" => $arrayCnpjString,
@@ -238,6 +237,73 @@ function SalvaxmlNota($xmlconteudo, $numero_nf) {
     }
 }
 
+function SalvaPDFNota($pdf_conteudo_base64, $numero_nf) {
+    echo "entrou pra salvar";
+    $pasta_destino = "pdf_danfes/";
+
+    if (!is_dir($pasta_destino)) {
+         if (!@mkdir($pasta_destino, 0777, true)) {
+            return "ERRO: Falha ao criar a pasta " . $pasta_destino . ". Verifique permissões.";
+        }
+    }
+
+    $pdf_conteudo_binario = base64_decode($pdf_conteudo_base64);
+    $nome_arquivo = $pasta_destino . $numero_nf . '.pdf';
+    
+    $salvamento = file_put_contents($nome_arquivo, $pdf_conteudo_binario);
+
+    if ($salvamento !== false) {
+         return "SUCESSO: PDF salvo em: " . $nome_arquivo . " (" . $salvamento . " bytes)";
+     } else {
+         return "ERRO: Falha ao salvar o PDF em " . $nome_arquivo . ". Verifique as permissões de escrita.";
+     }
+}
+
+// function ObterDanfe($xml_conteudo) {
+//     echo 'entrou na função obter Danfe';
+//     echo '<pre>';
+//     $url = 'https://api.meudanfe.com.br/v2/fd/convert/xml-to-da';
+//     $ch = curl_init($url);
+//     //Define o método como POST
+//     curl_setopt($ch, CURLOPT_POST, true);
+//     $headers = [
+//         'Content-Type: text/plain', // O corpo é o XML puro
+//         'Api-Key: ' . 'c6784f67-c877-4356-801d-70c433933fe2'       // Sua chave de acesso
+//     ];
+//     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+//     curl_setopt($ch, CURLOPT_POSTFIELDS, $xml_conteudo);
+//     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+//     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+//     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+//     $response = curl_exec($ch);
+//     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+//     curl_close($ch);
+
+//     if ($http_code == 200) {
+//         echo 'obter danfe retornou 200';
+//         echo '<pre>';
+//         $json_response = json_decode($response, true);
+//         if (isset($json_response['DanfeDactePdf'])) {
+//             return [
+//                 'status' => 200, 
+//                 'pdf_base64' => $json_response['DanfeDactePdf']
+//             ];
+//         } else {
+//             return [
+//                 'status' => 400,
+//                 'mensagem' => 'Resposta invalida da API' . $response
+//             ];
+//         }
+//     } else {
+//         return [
+//             'status' => $http_code,
+//             'mensagem' => 'Erro HTTP: ' . $http_code . ' - ' . $response
+//         ];
+//     }
+// }
+
 
 $documentos_fiscais = obterDocumntosFiscais();
 mostraArray($documentos_fiscais, false);
@@ -267,11 +333,30 @@ if ($data && isset($data['PaginatedList'])) {
 
         $cor_salvamento = (strpos($status_salvamento, 'SUCESSO') !== false) ? 'green' : 'red';
         
+
         echo "<span style='color: " . $cor_salvamento . "; font-weight: bold;'>". $status_salvamento .  "</span>";
+        echo "<pre>";
         echo "</p>";
+        echo "obtendo a danfe da nota";
+        echo "<pre>";
+
+        $danfe_conteudo = ObterDanfe($xmlconteudo);
+
+        if ($danfe_conteudo['status'] == 200) {
+            echo 'api retornou 200';
+            $salva_danfe = SalvaPDFNota($danfe_conteudo['pdf_base64'], $numero_nf);
+
+            $cor_salvamento_danfe = (strpos($salva_danfe, 'SUCESSO') !== false) ? 'green' : 'red';
+
+            echo "<span style='color: " . $cor_salvamento_danfe . "; font-weight: bold;'>". $salva_danfe .  "</span>";
+        } else {
+            echo 'ERRO resposta da API: '. $danfe_conteudo['mensagem'];
+            echo "<pre>";
+        }
+
     }
 } else {
-    echo "ocorreu um erro na obtenção do xml das notas";
+    echo "ocorreu um erro";
 }
 
 ?>
