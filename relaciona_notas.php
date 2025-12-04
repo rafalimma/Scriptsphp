@@ -306,7 +306,7 @@ echo "<br>";
 
 $xpathsgftnfeemit = [
     // CORREÇÃO: Usamos local-name() para a tag principal <infNFe> que não tem prefixo
-    'idNF' => '//nfe:infNFe/@Id',
+    'infNFed' => '//nfe:infNFe/@Id',
     // As tags internas funcionam bem com o prefixo nfe:
     'NumeroNF' => '//nfe:ide/nfe:nNF',
     'DataEmissao' => '//nfe:ide/nfe:dhEmi',
@@ -331,6 +331,7 @@ $xpathsgftnfeemit = [
 ];
 
 $xpathsgftnfeinf = [
+    'infNFed' => '//nfe:infNFe/@Id',
     // ... (Os XPaths para inf. complementares e protocolo)
     'infCpl' => '//nfe:infAdic/nfe:infCpl',
     // CORREÇÃO: Usamos o prefixo 'ds' para a assinatura
@@ -343,21 +344,102 @@ $xpathsgftnfeinf = [
     'digVal' => '//nfe:protNFe/nfe:infProt/nfe:digVal',
     'cStat' => '//nfe:protNFe/nfe:infProt/nfe:cStat',
     'xMotivo' => '//nfe:protNFe/nfe:infProt/nfe:xMotivo',
-    // CORREÇÃO: Usamos local-name() para a tag principal
-    'idNF' => '/*[local-name()="NFe"]/*[local-name()="infNFe"]/@Id',
+];
+
+$xpathsgitnfeinventtierp = [
+    // num_seq_nfe (numeric) - Número da NF (o nNF)
+    'num_seq_nfe' => '//nfe:ide/nfe:nNF', 
+    'id_filial' => '//nfe:dest/nfe:CNPJ', 
+    'situacao' => '//nfe:ide/nfe:nNF',
+    'cfop' => '//nfe:ide/nfe:CFOP',
+    'pasta_destino' => '//nfe:ide/nfe:nNF',
+    'id_usuarioi' => '//nfe:ide/nfe:nNF',
+    'dt_inclusao' => '//nfe:ide/nfe:nNF',
+    'dt_copia' => '//nfe:ide/nfe:nNF', 
+    'log_integracao' => '//nfe:protNFe/nfe:infProt/nfe:xMotivo', 
+    'razao' => '//nfe:emit/nfe:xNome', 
+    'nr_nota' => '//nfe:ide/nfe:nNF', 
+    'chave_nfe' => '//nfe:protNFe/nfe:infProt/nfe:chNFe', 
+
+    'dt_emissao' => '//nfe:ide/nfe:dhEmi', 
+    'situacao_pastadestino' => '//nfe:ide/nfe:nNF',
+    'id_usuarioa' => '//nfe:ide/nfe:nNF', 
+    'dt_alteracao' => '//nfe:ide/nfe:nNF', 
+    'nr_serie' => '//nfe:ide/nfe:serie',
+];
+
+$xpathsgftnfeide = [
+    // 1. infNFed (ID da informação da NF-e - Atributo 'Id' da tag <infNFe>)
+    'infNFed' => '//nfe:infNFe/@Id', 
+    'cUF' => '//nfe:ide/nfe:cUF',
+    'cNF' => '//nfe:ide/nfe:cNF',
+    'natOp' => '//nfe:ide/nfe:natOp',
+    'mod' => '//nfe:ide/nfe:mod',
+    'serie' => '//nfe:ide/nfe:serie',
+    'nNF' => '//nfe:ide/nfe:nNF',
+    'dhEmi' => '//nfe:ide/nfe:dhEmi',
+    'dhSaiEnt' => '//nfe:ide/nfe:dhSaiEnt',
+    'tpNF' => '//nfe:ide/nfe:tpNF',
+    'idDest' => '//nfe:ide/nfe:idDest',
+    'cMunFG' => '//nfe:ide/nfe:cMunFG',
+    'tpImp' => '//nfe:ide/nfe:tpImp',
+    'tpEmis' => '//nfe:ide/nfe:tpEmis',
+    'cDV' => '//nfe:ide/nfe:cDV',
+    'tpAmb' => '//nfe:ide/nfe:tpAmb',
+    'finNFe' => '//nfe:ide/nfe:finNFe',
+    'indFinal' => '//nfe:ide/nfe:indFinal',
+    'indPres' => '//nfe:ide/nfe:indPres',
+    'procEmi' => '//nfe:ide/nfe:procEmi',
+    'verProc' => '//nfe:ide/nfe:verProc',
+    'id_nfeide' => '//nfe:infNFe/@Id', 
+    'id_usuarioa' => '//nfe:infNFe/@Id', 
+];
+
+$xpathsgftnfedest = [
+    'infNFed' => '//nfe:infNFe/@Id',
+    'CNPJ' => '//nfe:dest/nfe:CNPJ',
+    'xLgr' => '//nfe:dest/nfe:enderDest/nfe:xLgr',
+    'nro' => '//nfe:dest/nfe:enderDest/nfe:nro',
+    'xBairro' => '//nfe:dest/nfe:enderDest/nfe:xBairro',
+    'cMun' => '//nfe:dest/nfe:enderDest/nfe:cMun',
+    'xMun' => '//nfe:dest/nfe:enderDest/nfe:xMun',
+    'UF' => '//nfe:dest/nfe:enderDest/nfe:UF',
+    'CEP' => '//nfe:dest/nfe:enderDest/nfe:CEP',
+    'cPais' => '//nfe:dest/nfe:enderDest/nfe:cPais',
+    'xPais' => '//nfe:dest/nfe:enderDest/nfe:xPais',
+    // CORREÇÃO: fone do destente está no endereço
+    'fone' => '//nfe:dest/nfe:enderDest/nfe:fone', 
+    // CORREÇÃO: IE do destente está sob a tag <dest>
+    'IE' => '//nfe:dest/nfe:IE',
+    'indIEDest' => '//nfe:dest/nfe:indIEDest',
+    'id_usuarioa' => '//nfe:infNFe/@Id',
+    'dt_alteracao' => '//nfe:infNFe/@Id',
+    // CRT está sob a tag <dest>
 ];
 
 function ExtraiDadosXML($xpathProcessor, $tabela) {
     global $xpathsgftnfeemit; 
     global $xpathsgftnfeinf; // NOVO: Precisa do array gftnfeinf também
+    global $xpathsgitnfeinventtierp;
+    global $xpathsgftnfeide;
+    global $xpathsgftnfedest;
 
     // Define qual array de XPaths usar (e qual será o mapa de colunas)
     if ($tabela === 'gftnfeemit') {
         $xpaths = $xpathsgftnfeemit;
-        $mapaColunas = $xpathsgftnfeemit; // Mapa para mapear de volta para si mesmo (chave => chave)
-    } elseif ($tabela === 'gftnfeinf') { // NOVO: Adiciona a lógica para gftnfeinf
+        $mapaColunas = $xpathsgftnfeemit;
+    } elseif ($tabela === 'gftnfeinf') {
         $xpaths = $xpathsgftnfeinf;
         $mapaColunas = $xpathsgftnfeinf;
+    } elseif ($tabela === 'gitnfeinventtierp') {
+        $xpaths = $xpathsgitnfeinventtierp;
+        $mapaColunas = $xpathsgitnfeinventtierp;
+    } elseif ($tabela === 'gftnfeide') {
+        $xpaths = $xpathsgftnfeide;
+        $mapaColunas = $xpathsgftnfeide;
+    } elseif ($tabela === 'gftnfedest') {
+        $xpaths = $xpathsgftnfedest;
+        $mapaColunas = $xpathsgftnfedest;
     }
     
     $dadosExtraidos = [];
@@ -457,6 +539,7 @@ if ($data && isset($data['PaginatedList'])) {
         $cnpjDest = ($cnpjDestNodes->length > 0) ? trim($cnpjDestNodes->item(0)->nodeValue) : null;
         if ($tipoNota === '1' && $cnpjDest === '19362207000215') {
             echo "entrou no iffzão";
+            $data_hora_atual = date('Y-m-d H:i:s');
             
             // --- Extração Tabela 1: gftnfeemit (Dados do Emitente) ---
             $dados_emitente = ExtraiDadosXML($xpathProcessor, 'gftnfeemit');
@@ -465,23 +548,100 @@ if ($data && isset($data['PaginatedList'])) {
             $dados_emitente['IM'] = null; 
             $dados_emitente['CNAE'] = null; 
             $dados_emitente['id_usuarioa'] = null;
-            $dados_emitente['dt_alteracao'] = null;
-
+            $dados_emitente['dt_alteracao'] = $data_hora_atual;
+            echo "<br>";
             echo "<br>Mostrando gftnfeemit : ";
+            echo "<br>";
             print_r($dados_emitente);
             // **AQUI você chama a função para salvar $dados_emitente no banco**
-            
             // --- Extração Tabela 2: gftnfeinf (Informações do Protocolo) ---
             $dados_protocolo = ExtraiDadosXML($xpathProcessor, 'gftnfeinf');
-            
-            // Uso cruzado de dados: Adiciona o ID da primeira extração à segunda tabela
-            if (isset($dados_emitente['idNF'])) {
-                $dados_protocolo['ID_NFE_EMITIDA'] = $dados_emitente['idNF'];
-            }
 
+            $dados_protocolo['situacao'] = null;
+            $dados_protocolo['id_emailcliente'] = null;
+            $dados_protocolo['dt_enviocliente'] = null;
+            $dados_protocolo['id_thread'] = null;
+            $dados_protocolo['id_nfe'] = $numero_nf;
+            $dados_protocolo['email_adicional'] = null;
+            $dados_protocolo['dt_alteracao'] = $data_hora_atual;
+            $dados_protocolo['envia_email_adicional'] = 'S';
+            $dados_protocolo['envia_email_adicional_cadastro'] = 'S';
+            $dados_protocolo['envia_email_cliente'] = 'S';
+            $dados_protocolo['arquivo_xml'] = null;
+            $dados_protocolo['arquivo_pdf'] = null;
+            $dados_protocolo['email_comprador'] = 'N';
+            $dados_protocolo['envia_email_comprador'] = 'N';
+            $dados_protocolo['envia_email_comprador'] = '0.00';
+            $dados_protocolo['vl_mercadoria'] = null; 
+            $dados_protocolo['vl_nf'] = null; 
+            $dados_protocolo['recebimento_automatico'] = 'N'; 
+            $dados_protocolo['dt_recebimento_automatico'] = null; 
+            $dados_protocolo['cd_cadastrocd'] = null; 
+            $dados_protocolo['situacao_cd'] = null; 
+            $dados_protocolo['prioridadecd'] = '2'; 
+            $dados_protocolo['dt_entradacd'] = null;
+            $dados_protocolo['dt_conferidocd'] = null;
+            $dados_protocolo['dt_cargacd'] = null;
+            $dados_protocolo['dt_saidacd'] = null;
+            $dados_protocolo['id_usuarioentradacd'] = null;
+            $dados_protocolo['id_usuarioconferidocd'] = null;
+            $dados_protocolo['id_usuariosaidacd'] = null;
+            $dados_protocolo['id_item'] = null;
+            $dados_protocolo['id_cargacd'] = null;
+            $dados_protocolo['id_rack'] = null;
+            $dados_protocolo['tp_embalagem'] = 'N';
+            $dados_protocolo['cd_cadastro'] = null;
+            $dados_protocolo['romaneio_txt'] = null;
+            $dados_protocolo['arquivo_romaneio'] = null;
+            $dados_protocolo['validado'] = 'N';
+            $dados_protocolo['nr_etiquetaestoque'] = null;
+            $dados_protocolo['dt_emissaoetiquetaestoque'] = null;
+            $dados_protocolo['id_usuarioemissaoetiquetaestoque'] = null;
+            $dados_protocolo['obs'] = null;
+            $dados_protocolo['tem_divergencia'] = null;
+            $dados_protocolo['situacao_email'] = null;
+            $dados_protocolo['processado_xmlentrada'] = null;
+            echo "<br>";
             echo "<br>Mostrando gftnfeinf : ";
+            echo "<br>";
             print_r($dados_protocolo);
+            // salva no banco
+
+            $dados_xpathsgitnfeinventtierp = ExtraiDadosXML($xpathProcessor, 'gitnfeinventtierp');
+            $dados_xpathsgitnfeinventtierp['id_filial'] = $_SESSION['ss_id_filial'];
+            $dados_xpathsgitnfeinventtierp['situacao'] = 'C';
+            $dados_xpathsgitnfeinventtierp['pasta_destino'] = 'E:\SISTEMA\Calisto\xml_sefaz_sp\.';
+            $dados_xpathsgitnfeinventtierp['id_usuarioi'] = 1;
+            $dados_xpathsgitnfeinventtierp['dt_inclusao'] = $data_hora_atual;
+            $dados_xpathsgitnfeinventtierp['dt_copia'] = null;
+            $dados_xpathsgitnfeinventtierp['log_integracao'] = null;
+            $dados_xpathsgitnfeinventtierp['situacao_pastadestino'] = 'A';
+            $dados_xpathsgitnfeinventtierp['id_usuarioa'] = 1;
+            $dados_xpathsgitnfeinventtierp['dt_alteracao'] = $data_hora_atual;
+            echo "<br>";
+            echo "<br>Mostrando inventti : ";
+            echo "<br>";
+            print_r($dados_xpathsgitnfeinventtierp);
+
+            $dados_gftnfeide = ExtraiDadosXML($xpathProcessor, 'gftnfeide');
+            $dados_gftnfeide['id_usuarioa'] = 1;
+            $dados_gftnfeide['id_nfeide'] = null;
+            echo "<br>";
+            echo "<br>Mostrando gftnfeide : ";
+            echo "<br>";
+            print_r($dados_gftnfeide);
+
+            $dados_gftnfedest = ExtraiDadosXML($xpathProcessor, 'gftnfedest');
+            $dados_gftnfedest['id_usuarioa'] = 1;
+            $dados_gftnfedest['dt_alteracao'] = $data_hora_atual;
+            echo "<br>";
+            echo "<br>Mostrando gftnfedest : ";
+            echo "<br>";
+            print_r($dados_gftnfedest);
+
+
             // **AQUI você chama a função para salvar $dados_protocolo no banco**
+            // salva no banco
         }
         
 
@@ -489,7 +649,7 @@ if ($data && isset($data['PaginatedList'])) {
 
         $cor_salvamento = (strpos($status_salvamento, 'SUCESSO') !== false) ? 'green' : 'red';
         
-
+        echo "<br>";
         echo "<span style='color: " . $cor_salvamento . "; font-weight: bold;'>". $status_salvamento .  "</span>";
         echo "<br>";
 
