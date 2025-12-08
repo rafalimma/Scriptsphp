@@ -26,8 +26,8 @@ $_SESSION["CONFIG_FILE"] = $_SESSION["DIR_ROOT"] . "/config/config.php";
 
 @require_once('obterdanfe.php');
 @require_once('salvaDadosDANFe.php');
-@require_once('dataTypesNfesTables.php');
-// @require_once('ExtrairDadosXML.php');
+@require_once('XpathsNfesTables.php');
+@require_once('ExtrairDadosXML.php');
 @require_once($_SESSION["CONFIG_FILE"]);
 while (ob_get_level()) {
     ob_end_flush();
@@ -304,196 +304,7 @@ if ($paginated_json_string) {
 // echo "leu a resposta";
 echo "<br>";
 
-$xpathsgftnfeemit = [
-    // CORREÇÃO: Usamos local-name() para a tag principal <infNFe> que não tem prefixo
-    'infNFed' => '//nfe:infNFe/@Id',
-    // As tags internas funcionam bem com o prefixo nfe:
-    'NumeroNF' => '//nfe:ide/nfe:nNF',
-    'DataEmissao' => '//nfe:ide/nfe:dhEmi',
-    'CNPJ' => '//nfe:emit/nfe:CNPJ',
-    'xNome' => '//nfe:emit/nfe:xNome',
-    'xFant' => '//nfe:emit/nfe:xFant',
-    'xLgr' => '//nfe:emit/nfe:enderEmit/nfe:xLgr',
-    'nro' => '//nfe:emit/nfe:enderEmit/nfe:nro',
-    'xBairro' => '//nfe:emit/nfe:enderEmit/nfe:xBairro',
-    'cMun' => '//nfe:emit/nfe:enderEmit/nfe:cMun',
-    'xMun' => '//nfe:emit/nfe:enderEmit/nfe:xMun',
-    'UF' => '//nfe:emit/nfe:enderEmit/nfe:UF',
-    'CEP' => '//nfe:emit/nfe:enderEmit/nfe:CEP',
-    'cPais' => '//nfe:emit/nfe:enderEmit/nfe:cPais',
-    'xPais' => '//nfe:emit/nfe:enderEmit/nfe:xPais',
-    // CORREÇÃO: fone do emitente está no endereço
-    'fone' => '//nfe:emit/nfe:enderEmit/nfe:fone', 
-    // CORREÇÃO: IE do emitente está sob a tag <emit>
-    'IE' => '//nfe:emit/nfe:IE',
-    // CRT está sob a tag <emit>
-    'CRT' => '//nfe:emit/nfe:CRT', 
-];
 
-$xpathsgftnfeinf = [
-    'infNFed' => '//nfe:infNFe/@Id',
-    // ... (Os XPaths para inf. complementares e protocolo)
-    'infCpl' => '//nfe:infAdic/nfe:infCpl',
-    // CORREÇÃO: Usamos o prefixo 'ds' para a assinatura
-    'signature' => '//ds:Signature/ds:SignatureValue', 
-    'tpAmb' => '//nfe:ide/nfe:tpAmb',
-    'verAplic' => '//nfe:protNFe/nfe:infProt/nfe:verAplic',
-    'chNFe' => '//nfe:protNFe/nfe:infProt/nfe:chNFe',
-    'dhRecbto' => '//nfe:protNFe/nfe:infProt/nfe:dhRecbto',
-    'nProt' => '//nfe:protNFe/nfe:infProt/nfe:nProt',
-    'digVal' => '//nfe:protNFe/nfe:infProt/nfe:digVal',
-    'cStat' => '//nfe:protNFe/nfe:infProt/nfe:cStat',
-    'xMotivo' => '//nfe:protNFe/nfe:infProt/nfe:xMotivo',
-];
-
-$xpathsgitnfeinventtierp = [
-    // num_seq_nfe (numeric) - Número da NF (o nNF)
-    'num_seq_nfe' => '//nfe:ide/nfe:nNF', 
-    'id_filial' => '//nfe:dest/nfe:CNPJ', 
-    'situacao' => '//nfe:ide/nfe:nNF',
-    'cfop' => '//nfe:ide/nfe:CFOP',
-    'pasta_destino' => '//nfe:ide/nfe:nNF',
-    'id_usuarioi' => '//nfe:ide/nfe:nNF',
-    'dt_inclusao' => '//nfe:ide/nfe:nNF',
-    'dt_copia' => '//nfe:ide/nfe:nNF', 
-    'log_integracao' => '//nfe:protNFe/nfe:infProt/nfe:xMotivo', 
-    'razao' => '//nfe:emit/nfe:xNome', 
-    'nr_nota' => '//nfe:ide/nfe:nNF', 
-    'chave_nfe' => '//nfe:protNFe/nfe:infProt/nfe:chNFe', 
-
-    'dt_emissao' => '//nfe:ide/nfe:dhEmi', 
-    'situacao_pastadestino' => '//nfe:ide/nfe:nNF',
-    'id_usuarioa' => '//nfe:ide/nfe:nNF', 
-    'dt_alteracao' => '//nfe:ide/nfe:nNF', 
-    'nr_serie' => '//nfe:ide/nfe:serie',
-];
-
-$xpathsgftnfeide = [
-    // 1. infNFed (ID da informação da NF-e - Atributo 'Id' da tag <infNFe>)
-    'infNFed' => '//nfe:infNFe/@Id', 
-    'cUF' => '//nfe:ide/nfe:cUF',
-    'cNF' => '//nfe:ide/nfe:cNF',
-    'natOp' => '//nfe:ide/nfe:natOp',
-    'mod' => '//nfe:ide/nfe:mod',
-    'serie' => '//nfe:ide/nfe:serie',
-    'nNF' => '//nfe:ide/nfe:nNF',
-    'dhEmi' => '//nfe:ide/nfe:dhEmi',
-    'dhSaiEnt' => '//nfe:ide/nfe:dhSaiEnt',
-    'tpNF' => '//nfe:ide/nfe:tpNF',
-    'idDest' => '//nfe:ide/nfe:idDest',
-    'cMunFG' => '//nfe:ide/nfe:cMunFG',
-    'tpImp' => '//nfe:ide/nfe:tpImp',
-    'tpEmis' => '//nfe:ide/nfe:tpEmis',
-    'cDV' => '//nfe:ide/nfe:cDV',
-    'tpAmb' => '//nfe:ide/nfe:tpAmb',
-    'finNFe' => '//nfe:ide/nfe:finNFe',
-    'indFinal' => '//nfe:ide/nfe:indFinal',
-    'indPres' => '//nfe:ide/nfe:indPres',
-    'procEmi' => '//nfe:ide/nfe:procEmi',
-    'verProc' => '//nfe:ide/nfe:verProc',
-    'id_nfeide' => '//nfe:infNFe/@Id', 
-    'id_usuarioa' => '//nfe:infNFe/@Id', 
-];
-
-$xpathsgftnfedest = [
-    'infNFed' => '//nfe:infNFe/@Id',
-    'CNPJ' => '//nfe:dest/nfe:CNPJ',
-    'xLgr' => '//nfe:dest/nfe:enderDest/nfe:xLgr',
-    'nro' => '//nfe:dest/nfe:enderDest/nfe:nro',
-    'xBairro' => '//nfe:dest/nfe:enderDest/nfe:xBairro',
-    'cMun' => '//nfe:dest/nfe:enderDest/nfe:cMun',
-    'xMun' => '//nfe:dest/nfe:enderDest/nfe:xMun',
-    'UF' => '//nfe:dest/nfe:enderDest/nfe:UF',
-    'CEP' => '//nfe:dest/nfe:enderDest/nfe:CEP',
-    'cPais' => '//nfe:dest/nfe:enderDest/nfe:cPais',
-    'xPais' => '//nfe:dest/nfe:enderDest/nfe:xPais',
-    // CORREÇÃO: fone do destente está no endereço
-    'fone' => '//nfe:dest/nfe:enderDest/nfe:fone', 
-    // CORREÇÃO: IE do destente está sob a tag <dest>
-    'IE' => '//nfe:dest/nfe:IE',
-    'indIEDest' => '//nfe:dest/nfe:indIEDest',
-    'id_usuarioa' => '//nfe:infNFe/@Id',
-    'dt_alteracao' => '//nfe:infNFe/@Id',
-    // CRT está sob a tag <dest>
-];
-
-function ExtraiDadosXML($xpathProcessor, $tabela) {
-    global $xpathsgftnfeemit; 
-    global $xpathsgftnfeinf; // NOVO: Precisa do array gftnfeinf também
-    global $xpathsgitnfeinventtierp;
-    global $xpathsgftnfeide;
-    global $xpathsgftnfedest;
-
-    // Define qual array de XPaths usar (e qual será o mapa de colunas)
-    if ($tabela === 'gftnfeemit') {
-        $xpaths = $xpathsgftnfeemit;
-        $mapaColunas = $xpathsgftnfeemit;
-    } elseif ($tabela === 'gftnfeinf') {
-        $xpaths = $xpathsgftnfeinf;
-        $mapaColunas = $xpathsgftnfeinf;
-    } elseif ($tabela === 'gitnfeinventtierp') {
-        $xpaths = $xpathsgitnfeinventtierp;
-        $mapaColunas = $xpathsgitnfeinventtierp;
-    } elseif ($tabela === 'gftnfeide') {
-        $xpaths = $xpathsgftnfeide;
-        $mapaColunas = $xpathsgftnfeide;
-    } elseif ($tabela === 'gftnfedest') {
-        $xpaths = $xpathsgftnfedest;
-        $mapaColunas = $xpathsgftnfedest;
-    }
-    
-    $dadosExtraidos = [];
-        foreach ($xpaths as $chaveDado => $expressaoXpath) {
-            $nodes = $xpathProcessor->query($expressaoXpath);
-
-            $valorEncontrado = null;
-            if ($nodes && $nodes->length > 0) {
-                $node = $nodes->item(0);
-                $valorEncontrado = trim($node->nodeValue);
-            }
-            // salva o valor encontrado no array de dados
-            $dadosExtraidos[$chaveDado] = $valorEncontrado;
-            // echo "<h2>dados NÂO Formatados</h2>";
-            // print_r($dadosExtraidos);
-        }
-    
-    // Retorna o resultado do mapeamento, que agora está ordenado pelas chaves do XPath
-    return mapearEOrdenarDados($dadosExtraidos, $mapaColunas); // CORRIGIDO: Deve retornar!
-}
-
-function mapearEOrdenarDados(array $dadosOriginais, array $mapa_colunas) {
-    $dados_formatados = [];
-    
-    foreach ($mapa_colunas as $coluna_banco => $chave_original) {
-        $valor = null;
-        // Verifica se a chave original existe no array de dados
-        if (isset($dadosOriginais[$coluna_banco])) {
-            $valor = $dadosOriginais[$coluna_banco];
-        } 
-        // Adiciona o valor à nova chave (coluna do banco).
-        // Se o valor for null (chave não existia ou valor vazio), será mantido.
-        $dados_formatados[$coluna_banco] = $valor;
-    }
-    // echo "<h2>Mostrando dados formatadosss</h2>";
-    // print_r($dados_formatados);
-    return $dados_formatados;
-}
-
-function preparaXPath($xmlconteudo) {
-    $dom = new DOMDocument('1.0', 'UTF-8');
-    // Adicione LIBXML_NOCDATA para lidar com CDATA, evitando problemas de parseamento
-    if (!$dom->loadXML($xmlconteudo, LIBXML_NOCDATA)) { 
-        // Em caso de falha de carregamento, retorne null
-        return null; 
-    }
-    $xpathProcessor = new DOMXPath($dom);
-    // 1. Registro do Namespace da NF-e (Obrigatório para prefixo nfe:)
-    $xpathProcessor->registerNamespace('nfe', 'http://www.portalfiscal.inf.br/nfe');  
-    // 2. Registro do Namespace da Assinatura (Obrigatório para prefixo ds:)
-    // echo "XPATH____>". $xpathProcessor;
-    $xpathProcessor->registerNamespace('ds', 'http://www.w3.org/2000/09/xmldsig#');
-    return $xpathProcessor;
-}
 
 if ($data && isset($data['PaginatedList'])) { 
     // echo "entrou no if";
@@ -638,6 +449,30 @@ if ($data && isset($data['PaginatedList'])) {
             echo "<br>Mostrando gftnfedest : ";
             echo "<br>";
             print_r($dados_gftnfedest);
+
+            $dados_gftnfedetpag = ExtraiDadosXML($xpathProcessor, 'gftnfedetpag');
+            echo "<br>";
+            echo "<br>Mostrando dados det pagamento : ";
+            echo "<br>";
+            print_r($dados_gftnfedetpag);
+
+            $dados_gftnfedettotal = ExtraiDadosXML($xpathProcessor, 'gftnfedettotal');
+            echo "<br>";
+            echo "<br>Mostrando total de impostos da nota : ";
+            echo "<br>";
+            print_r($dados_gftnfedettotal);
+
+            $dados_gftnfedettransp = ExtraiDadosXML($xpathProcessor, 'gftnfedettransp');
+            echo "<br>";
+            echo "<br>Mostrando gftnfedettransp : ";
+            echo "<br>";
+            print_r($dados_gftnfedettransp);
+
+            $dados_gftnfedetnitem = ExtraiItensNotaXML($xpathProcessor, $xpathsgftnfedetnitem);
+            echo "<br>";
+            echo "<br>Mostrando itens da nota : ";
+            echo "<br>";
+            print_r($dados_gftnfedetnitem);
 
 
             // **AQUI você chama a função para salvar $dados_protocolo no banco**
