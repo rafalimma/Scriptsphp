@@ -16,18 +16,33 @@
 @ini_set("memory_limit", "1024M");
 @session_start();
 
-$_SESSION["DIR_ROOT"] = __DIR__;
-$_SESSION["DIR_ROOT"] = str_replace("\scripts", "", $_SESSION["DIR_ROOT"]);
-$_SESSION["DIR_ROOT"] = str_replace("/scripts", "", $_SESSION["DIR_ROOT"]);
-$_SESSION["HTTP_ROOT"] = "http://" . str_replace("index.php", "", $_SERVER["HTTP_HOST"] . $_SERVER["PHP_SELF"]);
-$_SESSION["HTTP_ROOT"] = "http://" . str_replace("relaciona_notas.php", "", $_SERVER["HTTP_HOST"] . $_SERVER["PHP_SELF"]);
+// --- CORREÇÃO DO CÁLCULO DE CAMINHOS ---
+
+// 1. Define a raiz do script: /caminho/do/projeto/scripts/fiscalio
+$script_dir = __DIR__; 
+
+// 2. Sobe dois níveis para encontrar a raiz do projeto (removendo '/fiscalio' e '/scripts')
+// dirname($script_dir) -> /caminho/do/projeto/scripts
+// dirname(dirname($script_dir)) -> /caminho/do/projeto
+$_SESSION["DIR_ROOT"] = dirname(dirname($script_dir));
+
+// 3. Define o caminho do arquivo de configuração
 $_SESSION["CONFIG_FILE"] = $_SESSION["DIR_ROOT"] . "/config/config.php";
 
+// 4. Correção da raiz HTTP (Mantendo o cálculo para o diretório atual)
+// Assumindo que você quer a URL até 'fiscalio/'
+$_SESSION["HTTP_ROOT"] = "http://" . $_SERVER["HTTP_HOST"] . dirname($_SERVER["PHP_SELF"]) . "/";
 
+// --- CORREÇÃO DA INCLUSÃO DOS ARQUIVOS ---
+
+// Se os arquivos (obterdanfe.php, etc.) estão na mesma pasta (scripts/fiscalio), 
+// basta usar a inclusão relativa:
 @require_once('obterdanfe.php');
 @require_once('salvaDadosDANFe.php');
 @require_once('XpathsNfesTables.php');
 @require_once('ExtrairDadosXML.php');
+
+// O arquivo de configuração será carregado a partir do caminho absoluto corrigido:
 @require_once($_SESSION["CONFIG_FILE"]);
 while (ob_get_level()) {
     ob_end_flush();
@@ -172,31 +187,21 @@ function obterDocumntosFiscais() {
    ];
 
    $data_body_array = [
-         "SearchTerm" => null,
-         "DateType" => null, 
-         "BeginDate" => null, 
-         "EndDate" => null,        
+         "SearchTerm" => "1936220700021",
+         "DateType" => "DtEmi", 
+         "FilterByNFe"=> true,
+         "BeginDate" => "01022025", 
+         "EndDate" => "10112025",        
          "EmittedByTerc" => true,
-         "PerPage" => 5,
+         "PerPage" => 20,
          "CurrentPage" => 1,
-         "DataNodeFocus" => null,
-         "FiliaisCNPJ" => $arrayCnpjString,
-         "FilialList" => [$filialViewObject],
+         "DataNodeFocus"=> "string",
+         "FiliaisCNPJ"=> "[\"50153054000246\",\"50153054000165\",\"19362207000215\"]",
+        //  "FiliaisCNPJ" => $arrayCnpjString,
+        //  "FilialList" => [$filialViewObject],
    ];
+//    "FiliaisCNPJ": "[\"50153054000246\",\"50153054000165\",\"19362207000215\"]",
 
-   // https://api.fiscal.io/v1/documents/get-document-paginate
-
-// GET /api/document/get-document-paginate
-        ///     {
-        ///       "SearchTerm": "12345678901234",
-        ///       "BeginDate": "2024-01-01",
-        ///       "EndDate": "2024-12-31",
-        ///       "FilterByNFe": true,
-        ///       "PerPage": 10,
-        ///       "CurrentPage": 1
-        ///
-        /// 2025-11-25,  2025-11-22
-        ///     }
 
    $response = apiRequest($url, $method, $header, $data_body_array, null);
    echo "vai retornar a resposta";
@@ -348,7 +353,7 @@ if ($data && isset($data['PaginatedList'])) {
         $cnpjDestNodes = $xpathProcessor->query('//nfe:dest/nfe:CNPJ');
         $tipoNota = ($tipoNotaNodes->length > 0) ? trim($tipoNotaNodes->item(0)->nodeValue) : null;
         $cnpjDest = ($cnpjDestNodes->length > 0) ? trim($cnpjDestNodes->item(0)->nodeValue) : null;
-        if ($tipoNota === '1' && $cnpjDest === '19362207000215') {
+        if ($tipoNota === '0' && $cnpjDest === '19362207000215') {
             echo "entrou no iffzão";
             $data_hora_atual = date('Y-m-d H:i:s');
             
@@ -364,6 +369,10 @@ if ($data && isset($data['PaginatedList'])) {
             echo "<br>Mostrando gftnfeemit : ";
             echo "<br>";
             print_r($dados_emitente);
+
+            $salvaDados = new SalvaDadosNota;
+            $salvaDados->pupularGftnfeemit($dados_emitente);
+            // echo $salvaDados;
             // **AQUI você chama a função para salvar $dados_emitente no banco**
             // --- Extração Tabela 2: gftnfeinf (Informações do Protocolo) ---
             $dados_protocolo = ExtraiDadosXML($xpathProcessor, 'gftnfeinf');
@@ -416,6 +425,7 @@ if ($data && isset($data['PaginatedList'])) {
             echo "<br>Mostrando gftnfeinf : ";
             echo "<br>";
             print_r($dados_protocolo);
+            $salvaDados->popularGftnfeinf($dados_protocolo);
             // salva no banco
 
             $dados_xpathsgitnfeinventtierp = ExtraiDadosXML($xpathProcessor, 'gitnfeinventtierp');
@@ -433,6 +443,7 @@ if ($data && isset($data['PaginatedList'])) {
             echo "<br>Mostrando inventti : ";
             echo "<br>";
             print_r($dados_xpathsgitnfeinventtierp);
+            $salvaDados->popularGitnfeinventtierp($dados_xpathsgitnfeinventtierp);
 
             $dados_gftnfeide = ExtraiDadosXML($xpathProcessor, 'gftnfeide');
             $dados_gftnfeide['id_usuarioa'] = 1;
@@ -441,6 +452,7 @@ if ($data && isset($data['PaginatedList'])) {
             echo "<br>Mostrando gftnfeide : ";
             echo "<br>";
             print_r($dados_gftnfeide);
+            $salvaDados->popularGftnfeide($dados_gftnfeide);
 
             $dados_gftnfedest = ExtraiDadosXML($xpathProcessor, 'gftnfedest');
             $dados_gftnfedest['id_usuarioa'] = 1;
@@ -449,24 +461,28 @@ if ($data && isset($data['PaginatedList'])) {
             echo "<br>Mostrando gftnfedest : ";
             echo "<br>";
             print_r($dados_gftnfedest);
+            $salvaDados->pipularGftnfedest($dados_gftnfedest);
 
             $dados_gftnfedetpag = ExtraiDadosXML($xpathProcessor, 'gftnfedetpag');
             echo "<br>";
             echo "<br>Mostrando dados det pagamento : ";
             echo "<br>";
             print_r($dados_gftnfedetpag);
+            $salvaDados->popularGftnfedetpag($dados_gftnfedetpag);
 
             $dados_gftnfedettotal = ExtraiDadosXML($xpathProcessor, 'gftnfedettotal');
             echo "<br>";
             echo "<br>Mostrando total de impostos da nota : ";
             echo "<br>";
             print_r($dados_gftnfedettotal);
+            $salvaDados->popularGftnfedettotal($dados_gftnfedettotal);
 
             $dados_gftnfedettransp = ExtraiDadosXML($xpathProcessor, 'gftnfedettransp');
             echo "<br>";
             echo "<br>Mostrando gftnfedettransp : ";
             echo "<br>";
             print_r($dados_gftnfedettransp);
+            $salvaDados->popularGftnfedettransp($dados_gftnfedettransp);
 
             $dados_gftnfedetnitem = ExtraiItensNotaXML($xpathProcessor, $xpathsgftnfedetnitem);
             echo "<br>";
