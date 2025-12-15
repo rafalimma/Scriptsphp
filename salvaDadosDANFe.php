@@ -3,7 +3,19 @@
 @ini_set('max_execution_time', '120000');
 @ini_set("memory_limit", "1024M");
 @session_start();
+$script_dir = __DIR__; 
+
+// 2. Sobe dois níveis para encontrar a raiz do projeto (removendo '/fiscalio' e '/scripts')
+// dirname($script_dir) -> /caminho/do/projeto/scripts
+// dirname(dirname($script_dir)) -> /caminho/do/projeto
+$_SESSION["DIR_ROOT"] = dirname(dirname($script_dir));
+
+// 3. Define o caminho do arquivo de configuração
 $_SESSION["CONFIG_FILE"] = $_SESSION["DIR_ROOT"] . "/config/config.php";
+
+// 4. Correção da raiz HTTP (Mantendo o cálculo para o diretório atual)
+// Assumindo que você quer a URL até 'fiscalio/'
+$_SESSION["HTTP_ROOT"] = "http://" . $_SERVER["HTTP_HOST"] . dirname($_SERVER["PHP_SELF"]) . "/";
 
 @require_once($_SESSION["CONFIG_FILE"]);
 while (ob_get_level()) {
@@ -132,7 +144,7 @@ class SalvaDadosNota {
             $xMotivo = (isset($dados['xMotivo']) && trim($dados['xMotivo']) !== '') ? "'" . pg_escape_string(trim($dados['xMotivo'])) . "'" : 'NULL';
 
             // Tratamento para STRING/CHAR (Adiciona aspas, trata NULL)
-            $situacao = (isset($dados['situacao']) && trim($dados['situacao']) !== '') ? "'" . pg_escape_string(trim($dados['situacao'])) . "'" : 'NULL';
+            $situacao = 0;
             $email_adicional = (isset($dados['email_adicional']) && trim($dados['email_adicional']) !== '') ? "'" . pg_escape_string(trim($dados['email_adicional'])) . "'" : 'NULL';
             $envia_email_adicional = (isset($dados['envia_email_adicional']) && trim($dados['envia_email_adicional']) !== '') ? "'" . pg_escape_string(trim($dados['envia_email_adicional'])) . "'" : "'S'"; // Assumindo 'S' como default se não for NULL
             $envia_email_adicional_cadastro = (isset($dados['envia_email_adicional_cadastro']) && trim($dados['envia_email_adicional_cadastro']) !== '') ? "'" . pg_escape_string(trim($dados['envia_email_adicional_cadastro'])) . "'" : "'S'"; // Assumindo 'S'
@@ -312,7 +324,12 @@ class SalvaDadosNota {
                 ")";
 
             $rs = $this->con->execute($sql);
-            return $rs;
+            if ($rs === false) {
+                $pg_error = (isset($this->con->conn) && is_resource($this->con->conn)) ? pg_last_error($this->con->conn) : "Erro de conexão não capturado.";
+                echo "Erro ao inserir dados na tabela da inventti. SQL: " . $sql . ". Mensagem de Erro: " . $pg_error;
+                return false;
+            }
+            return true;
         }
 
     function pipularGftnfedest($dados) {
@@ -364,6 +381,284 @@ class SalvaDadosNota {
             ")";
 
         // Assume que $this->con é o objeto de conexão, como no seu exemplo
+        $rs = $this->con->execute($sql);
+        if ($rs === false) {
+                $pg_error = (isset($this->con->conn) && is_resource($this->con->conn)) ? pg_last_error($this->con->conn) : "Erro de conexão não capturado.";
+                echo "Erro ao inserir dados na tabela de destino. SQL: " . $sql . ". Mensagem de Erro: " . $pg_error;
+                return false;
+            }
+            return true;
+    }
+
+    function popularGftnfeide($dados) {
+        // 1. Tratamento dos campos de texto (character varying)
+        $infNFed = (isset($dados['infNFed']) && trim($dados['infNFed']) !== '') ? "'" . pg_escape_string(trim($dados['infNFed'])) . "'" : 'NULL';
+        $cUF = (isset($dados['cUF']) && trim($dados['cUF']) !== '') ? "'" . pg_escape_string(trim($dados['cUF'])) . "'" : 'NULL';
+        $cNF = (isset($dados['cNF']) && trim($dados['cNF']) !== '') ? "'" . pg_escape_string(trim($dados['cNF'])) . "'" : 'NULL';
+        $natOp = (isset($dados['natOp']) && trim($dados['natOp']) !== '') ? "'" . pg_escape_string(trim($dados['natOp'])) . "'" : 'NULL';
+        $mod = (isset($dados['mod']) && trim($dados['mod']) !== '') ? "'" . pg_escape_string(trim($dados['mod'])) . "'" : 'NULL';
+        $serie = (isset($dados['serie']) && trim($dados['serie']) !== '') ? "'" . pg_escape_string(trim($dados['serie'])) . "'" : 'NULL';
+        $nNF = (isset($dados['nNF']) && trim($dados['nNF']) !== '') ? "'" . pg_escape_string(trim($dados['nNF'])) . "'" : 'NULL';
+        $dhEmi = (isset($dados['dhEmi']) && trim($dados['dhEmi']) !== '') ? "'" . pg_escape_string(trim($dados['dhEmi'])) . "'" : 'NULL';
+        $dhSaiEnt = (isset($dados['dhSaiEnt']) && trim($dados['dhSaiEnt']) !== '') ? "'" . pg_escape_string(trim($dados['dhSaiEnt'])) . "'" : 'NULL';
+        $tpNF = (isset($dados['tpNF']) && trim($dados['tpNF']) !== '') ? "'" . pg_escape_string(trim($dados['tpNF'])) . "'" : 'NULL';
+        $idDest = (isset($dados['idDest']) && trim($dados['idDest']) !== '') ? "'" . pg_escape_string(trim($dados['idDest'])) . "'" : 'NULL';
+        $cMunFG = (isset($dados['cMunFG']) && trim($dados['cMunFG']) !== '') ? "'" . pg_escape_string(trim($dados['cMunFG'])) . "'" : 'NULL';
+        $tpImp = (isset($dados['tpImp']) && trim($dados['tpImp']) !== '') ? "'" . pg_escape_string(trim($dados['tpImp'])) . "'" : 'NULL';
+        $tpEmis = (isset($dados['tpEmis']) && trim($dados['tpEmis']) !== '') ? "'" . pg_escape_string(trim($dados['tpEmis'])) . "'" : 'NULL';
+        $cDV = (isset($dados['cDV']) && trim($dados['cDV']) !== '') ? "'" . pg_escape_string(trim($dados['cDV'])) . "'" : 'NULL';
+        $tpAmb = (isset($dados['tpAmb']) && trim($dados['tpAmb']) !== '') ? "'" . pg_escape_string(trim($dados['tpAmb'])) . "'" : 'NULL';
+        $finNFe = (isset($dados['finNFe']) && trim($dados['finNFe']) !== '') ? "'" . pg_escape_string(trim($dados['finNFe'])) . "'" : 'NULL';
+        $indFinal = (isset($dados['indFinal']) && trim($dados['indFinal']) !== '') ? "'" . pg_escape_string(trim($dados['indFinal'])) . "'" : 'NULL';
+        $indPres = (isset($dados['indPres']) && trim($dados['indPres']) !== '') ? "'" . pg_escape_string(trim($dados['indPres'])) . "'" : 'NULL';
+        $procEmi = (isset($dados['procEmi']) && trim($dados['procEmi']) !== '') ? "'" . pg_escape_string(trim($dados['procEmi'])) . "'" : 'NULL';
+        $verProc = (isset($dados['verProc']) && trim($dados['verProc']) !== '') ? "'" . pg_escape_string(trim($dados['verProc'])) . "'" : 'NULL';
+        // 2. Tratamento de campos numéricos e IDs
+        $id_nfeide = "nextval('gftnfeide_id_nfeide_seq'::regclass)"; // Default do banco
+        $id_usuarioa = (isset($dados['id_usuarioa']) && is_numeric($dados['id_usuarioa'])) ? (int)$dados['id_usuarioa'] : 'NULL';
+        $dt_alteracao = (isset($dados['dt_alteracao']) && trim($dados['dt_alteracao']) !== '') ? "'" . pg_escape_string(trim($dados['dt_alteracao'])) . "'" : 'NULL';
+
+        // 3. Montagem do SQL com escape de colunas \"coluna\"
+        $sql = "INSERT INTO gftnfeide (" .
+            "\"infNFed\", \"cUF\", \"cNF\", \"natOp\", \"mod\", \"serie\", \"nNF\", \"dhEmi\", \"dhSaiEnt\", " .
+            "\"tpNF\", \"idDest\", \"cMunFG\", \"tpImp\", \"tpEmis\", \"cDV\", \"tpAmb\", \"finNFe\", \"indFinal\", " .
+            "\"indPres\", \"procEmi\", \"verProc\", \"id_nfeide\", \"id_usuarioa\", \"dt_alteracao\"" .
+            ") VALUES (" .
+            $infNFed . ", " .
+            $cUF . ", " .
+            $cNF . ", " .
+            $natOp . ", " .
+            $mod . ", " .
+            $serie . ", " .
+            $nNF . ", " .
+            $dhEmi . ", " .
+            $dhSaiEnt . ", " .
+            $tpNF . ", " .
+            $idDest . ", " .
+            $cMunFG . ", " .
+            $tpImp . ", " .
+            $tpEmis . ", " .
+            $cDV . ", " .
+            $tpAmb . ", " .
+            $finNFe . ", " .
+            $indFinal . ", " .
+            $indPres . ", " .
+            $procEmi . ", " .
+            $verProc . ", " .
+            $id_nfeide . ", " .
+            $id_usuarioa . ", " . 
+            $dt_alteracao .
+            ")";
+
+        $rs = $this->con->execute($sql);
+        if ($rs === false) {
+                $pg_error = (isset($this->con->conn) && is_resource($this->con->conn)) ? pg_last_error($this->con->conn) : "Erro de conexão não capturado.";
+                echo "Erro ao inserir dados na tabela gftnfeide. SQL: " . $sql . ". Mensagem de Erro: " . $pg_error;
+                return false;
+            }
+            return true;
+    }
+
+
+    function popularGftnfedetpag($dados) {
+        $infNFed = (isset($dados['infNFed']) && trim($dados['infNFed']) !== '') ? "'" . pg_escape_string(trim($dados['infNFed'])) . "'" : 'NULL';
+        $tPag = (isset($dados['cUF']) && trim($dados['cUF']) !== '') ? "'" . pg_escape_string(trim($dados['cUF'])) . "'" : 'NULL';
+        $vPag = (isset($dados['cNF']) && trim($dados['cNF']) !== '') ? "'" . pg_escape_string(trim($dados['cNF'])) . "'" : 'NULL';
+
+        $sql = "INSERT INTO gftnfedetpag (" ."\"infNFed\", \"tPag\", \"vPag\" "." ) VALUES (" .
+            $infNFed . ", " .
+            $tPag . ", " .
+            $vPag . ")";
+        $rs = $this->con->execute($sql);
+        if ($rs === false) {
+                $pg_error = (isset($this->con->conn) && is_resource($this->con->conn)) ? pg_last_error($this->con->conn) : "Erro de conexão não capturado.";
+                echo "Erro ao inserir dados na tabela gftnfeide. SQL: " . $sql . ". Mensagem de Erro: " . $pg_error;
+                return false;
+            }
+            return true;
+    }
+
+    function popularGftnfedettotal($dados) {
+        $infNFed = (isset($dados['infNFed']) && trim($dados['infNFed']) !== '') ? "'" . pg_escape_string(trim($dados['infNFed'])) . "'" : 'NULL';
+        // Campos Numéricos (vBC até vNF) - Se não houver valor ou não for numérico, envia NULL
+        $vBC         = (isset($dados['vBC']) && is_numeric($dados['vBC'])) ? $dados['vBC'] : 'NULL';
+        $vICMS       = (isset($dados['vICMS']) && is_numeric($dados['vICMS'])) ? $dados['vICMS'] : 'NULL';
+        $vICMSDeson  = (isset($dados['vICMSDeson']) && is_numeric($dados['vICMSDeson'])) ? $dados['vICMSDeson'] : 'NULL';
+        $vFCP        = (isset($dados['vFCP']) && is_numeric($dados['vFCP'])) ? $dados['vFCP'] : 'NULL';
+        $vBCST       = (isset($dados['vBCST']) && is_numeric($dados['vBCST'])) ? $dados['vBCST'] : 'NULL';
+        $vST         = (isset($dados['vST']) && is_numeric($dados['vST'])) ? $dados['vST'] : 'NULL';
+        $vFCPST      = (isset($dados['vFCPST']) && is_numeric($dados['vFCPST'])) ? $dados['vFCPST'] : 'NULL';
+        $vFCPSTRet   = (isset($dados['vFCPSTRet']) && is_numeric($dados['vFCPSTRet'])) ? $dados['vFCPSTRet'] : 'NULL';
+        $vProd       = (isset($dados['vProd']) && is_numeric($dados['vProd'])) ? $dados['vProd'] : 'NULL';
+        $vFrete      = (isset($dados['vFrete']) && is_numeric($dados['vFrete'])) ? $dados['vFrete'] : 'NULL';
+        $vSeg        = (isset($dados['vSeg']) && is_numeric($dados['vSeg'])) ? $dados['vSeg'] : 'NULL';
+        $vDesc       = (isset($dados['vDesc']) && is_numeric($dados['vDesc'])) ? $dados['vDesc'] : 'NULL';
+        $vII         = (isset($dados['vII']) && is_numeric($dados['vII'])) ? $dados['vII'] : 'NULL';
+        $vIPI        = (isset($dados['vIPI']) && is_numeric($dados['vIPI'])) ? $dados['vIPI'] : 'NULL';
+        $vIPIDevol   = (isset($dados['vIPIDevol']) && is_numeric($dados['vIPIDevol'])) ? $dados['vIPIDevol'] : 'NULL';
+        $vPIS        = (isset($dados['vPIS']) && is_numeric($dados['vPIS'])) ? $dados['vPIS'] : 'NULL';
+        $vCOFINS     = (isset($dados['vCOFINS']) && is_numeric($dados['vCOFINS'])) ? $dados['vCOFINS'] : 'NULL';
+        $vOutro      = (isset($dados['vOutro']) && is_numeric($dados['vOutro'])) ? $dados['vOutro'] : 'NULL';
+        $vNF         = (isset($dados['vNF']) && is_numeric($dados['vNF'])) ? $dados['vNF'] : 'NULL';
+
+        // 2. Montagem do SQL seguindo seu padrão exato de concatenação e escape
+        $sql = "INSERT INTO gftnfedettotal (" .
+            "\"infNFed\", \"vBC\", \"vICMS\", \"vICMSDeson\", \"vFCP\", \"vBCST\", \"vST\", \"vFCPST\", \"vFCPSTRet\", \"vProd\", " .
+            "\"vFrete\", \"vSeg\", \"vDesc\", \"vII\", \"vIPI\", \"vIPIDevol\", \"vPIS\", \"vCOFINS\", \"vOutro\", \"vNF\"" .
+            ") " .
+            "VALUES (" . 
+            $infNFed . ", " .
+            $vBC . ", " .
+            $vICMS . ", " .
+            $vICMSDeson . ", " .
+            $vFCP . ", " .
+            $vBCST . ", " .
+            $vST . ", " .
+            $vFCPST . ", " .
+            $vFCPSTRet . ", " .
+            $vProd . ", " .
+            $vFrete . ", " .
+            $vSeg . ", " .
+            $vDesc . ", " .
+            $vII . ", " .
+            $vIPI . ", " .
+            $vIPIDevol . ", " .
+            $vPIS . ", " .
+            $vCOFINS . ", " .
+            $vOutro . ", " .
+            $vNF . 
+            ")";
+
+        // 3. Execução
+        $rs = $this->con->execute($sql);
+        if ($rs === false) {
+                $pg_error = (isset($this->con->conn) && is_resource($this->con->conn)) ? pg_last_error($this->con->conn) : "Erro de conexão não capturado.";
+                echo "Erro ao inserir dados na tabela gftnfeide. SQL: " . $sql . ". Mensagem de Erro: " . $pg_error;
+                return false;
+            }
+            return true;
+    }
+
+    function popularGftnfedettransp($dados) {
+        // 1. Preparação dos campos de Texto (character varying / character)
+        $infNFed   = (isset($dados['infNFed']) && trim($dados['infNFed']) !== '') ? "'" . pg_escape_string(trim($dados['infNFed'])) . "'" : 'NULL';
+        $mod_frete = (isset($dados['mod_frete']) && trim($dados['mod_frete']) !== '') ? "'" . pg_escape_string(trim($dados['mod_frete'])) . "'" : 'NULL';
+        $CNPJ      = (isset($dados['CNPJ']) && trim($dados['CNPJ']) !== '') ? "'" . pg_escape_string(trim($dados['CNPJ'])) . "'" : 'NULL';
+        $xNome     = (isset($dados['xNome']) && trim($dados['xNome']) !== '') ? "'" . pg_escape_string(trim($dados['xNome'])) . "'" : 'NULL';
+        $IE        = (isset($dados['IE']) && trim($dados['IE']) !== '') ? "'" . pg_escape_string(trim($dados['IE'])) . "'" : 'NULL';
+        $xLgr      = (isset($dados['xLgr']) && trim($dados['xLgr']) !== '') ? "'" . pg_escape_string(trim($dados['xLgr'])) . "'" : 'NULL';
+        $xEnder    = (isset($dados['xEnder']) && trim($dados['xEnder']) !== '') ? "'" . pg_escape_string(trim($dados['xEnder'])) . "'" : 'NULL';
+        $xMun      = (isset($dados['xMun']) && trim($dados['xMun']) !== '') ? "'" . pg_escape_string(trim($dados['xMun'])) . "'" : 'NULL';
+        $UF        = (isset($dados['UF']) && trim($dados['UF']) !== '') ? "'" . pg_escape_string(trim($dados['UF'])) . "'" : 'NULL';
+        $placa     = (isset($dados['placa']) && trim($dados['placa']) !== '') ? "'" . pg_escape_string(trim($dados['placa'])) . "'" : 'NULL';
+        $uf_placa  = (isset($dados['uf_placa']) && trim($dados['uf_placa']) !== '') ? "'" . pg_escape_string(trim($dados['uf_placa'])) . "'" : 'NULL';
+        $esp       = (isset($dados['esp']) && trim($dados['esp']) !== '') ? "'" . pg_escape_string(trim($dados['esp'])) . "'" : 'NULL';
+        $marca     = (isset($dados['marca']) && trim($dados['marca']) !== '') ? "'" . pg_escape_string(trim($dados['marca'])) . "'" : 'NULL';
+
+        // 2. Preparação dos campos Inteiros e Numéricos
+        $qVol  = (isset($dados['qVol']) && is_numeric($dados['qVol'])) ? (int)$dados['qVol'] : 'NULL';
+        $pesoL = (isset($dados['pesoL']) && is_numeric($dados['pesoL'])) ? $dados['pesoL'] : 'NULL';
+        $pesoB = (isset($dados['pesoB']) && is_numeric($dados['pesoB'])) ? $dados['pesoB'] : 'NULL';
+
+        // 3. Montagem do SQL seguindo o seu padrão rigoroso de escape \"coluna\"
+        $sql = "INSERT INTO gftnfedettransp (" .
+            "\"infNFed\", \"mod_frete\", \"CNPJ\", \"xNome\", \"IE\", \"xLgr\", \"xEnder\", \"xMun\", " .
+            "\"UF\", \"placa\", \"uf_placa\", \"qVol\", \"esp\", \"marca\", \"pesoL\", \"pesoB\"" .
+            ") " .
+            "VALUES (" . 
+            $infNFed . ", " .
+            $mod_frete . ", " .
+            $CNPJ . ", " .
+            $xNome . ", " .
+            $IE . ", " .
+            $xLgr . ", " .
+            $xEnder . ", " .
+            $xMun . ", " .
+            $UF . ", " .
+            $placa . ", " .
+            $uf_placa . ", " .
+            $qVol . ", " .
+            $esp . ", " .
+            $marca . ", " .
+            $pesoL . ", " .
+            $pesoB . 
+            ")";
+
+        // 4. Execução
+        $rs = $this->con->execute($sql);
+        if ($rs === false) {
+                    $pg_error = (isset($this->con->conn) && is_resource($this->con->conn)) ? pg_last_error($this->con->conn) : "Erro de conexão não capturado.";
+                    echo "Erro ao inserir dados na tabela gftnfeide. SQL: " . $sql . ". Mensagem de Erro: " . $pg_error;
+                    return false;
+                }
+            return true;
+    }
+
+    function popularGftnfedetnitem($dados) {
+        // 1. Tratamento de Strings (Character Varying / Text / Character)
+        $infNFed     = (isset($dados['infNFed']) && trim($dados['infNFed']) !== '') ? "'" . pg_escape_string(trim($dados['infNFed'])) . "'" : 'NULL';
+        $cProd       = (isset($dados['cProd']) && trim($dados['cProd']) !== '') ? "'" . pg_escape_string(trim($dados['cProd'])) . "'" : 'NULL';
+        $xProd       = (isset($dados['xProd']) && trim($dados['xProd']) !== '') ? "'" . pg_escape_string(trim($dados['xProd'])) . "'" : 'NULL';
+        $NCM         = (isset($dados['NCM']) && trim($dados['NCM']) !== '') ? "'" . pg_escape_string(trim($dados['NCM'])) . "'" : 'NULL';
+        $CFOP        = (isset($dados['CFOP']) && trim($dados['CFOP']) !== '') ? "'" . pg_escape_string(trim($dados['CFOP'])) . "'" : 'NULL';
+        $uCom        = (isset($dados['uCom']) && trim($dados['uCom']) !== '') ? "'" . pg_escape_string(trim($dados['uCom'])) . "'" : 'NULL';
+        $cEANTrib    = (isset($dados['cEANTrib']) && trim($dados['cEANTrib']) !== '') ? "'" . pg_escape_string(trim($dados['cEANTrib'])) . "'" : 'NULL';
+        $uTrib       = (isset($dados['uTrib']) && trim($dados['uTrib']) !== '') ? "'" . pg_escape_string(trim($dados['uTrib'])) . "'" : 'NULL';
+        $indTot      = (isset($dados['indTot']) && trim($dados['indTot']) !== '') ? "'" . pg_escape_string(trim($dados['indTot'])) . "'" : 'NULL';
+        $ICMS_orig   = (isset($dados['ICMS_orig']) && trim($dados['ICMS_orig']) !== '') ? "'" . pg_escape_string(trim($dados['ICMS_orig'])) . "'" : 'NULL';
+        $ICMS_CST    = (isset($dados['ICMS_CST']) && trim($dados['ICMS_CST']) !== '') ? "'" . pg_escape_string(trim($dados['ICMS_CST'])) . "'" : 'NULL';
+        $ICMS_modBC  = (isset($dados['ICMS_modBC']) && trim($dados['ICMS_modBC']) !== '') ? "'" . pg_escape_string(trim($dados['ICMS_modBC'])) . "'" : 'NULL';
+        $IPI_cEnq    = (isset($dados['IPI_cEnq']) && trim($dados['IPI_cEnq']) !== '') ? "'" . pg_escape_string(trim($dados['IPI_cEnq'])) . "'" : 'NULL';
+        $IPI_CST     = (isset($dados['IPI_CST']) && trim($dados['IPI_CST']) !== '') ? "'" . pg_escape_string(trim($dados['IPI_CST'])) . "'" : 'NULL';
+        $PIS_CST     = (isset($dados['PIS_CST']) && trim($dados['PIS_CST']) !== '') ? "'" . pg_escape_string(trim($dados['PIS_CST'])) . "'" : 'NULL';
+        $COFINS_CST  = (isset($dados['COFINS_CST']) && trim($dados['COFINS_CST']) !== '') ? "'" . pg_escape_string(trim($dados['COFINS_CST'])) . "'" : 'NULL';
+        $situacao    = (isset($dados['situacao']) && trim($dados['situacao']) !== '') ? "'" . pg_escape_string(trim($dados['situacao'])) . "'" : "'A'";
+        $ncm_item    = (isset($dados['ncm_item']) && trim($dados['ncm_item']) !== '') ? "'" . pg_escape_string(trim($dados['ncm_item'])) . "'" : 'NULL';
+        $cd_item_fab = (isset($dados['cd_item_fab']) && trim($dados['cd_item_fab']) !== '') ? "'" . pg_escape_string(trim($dados['cd_item_fab'])) . "'" : 'NULL';
+        $cd_origem   = (isset($dados['cd_origem']) && trim($dados['cd_origem']) !== '') ? "'" . pg_escape_string(trim($dados['cd_origem'])) . "'" : 'NULL';
+        $nr_pedido   = (isset($dados['nr_pedido']) && trim($dados['nr_pedido']) !== '') ? "'" . pg_escape_string(trim($dados['nr_pedido'])) . "'" : 'NULL';
+        $qCom          = (isset($dados['qCom']) && is_numeric($dados['qCom'])) ? $dados['qCom'] : 'NULL';
+        $vUnCom        = (isset($dados['vUnCom']) && is_numeric($dados['vUnCom'])) ? $dados['vUnCom'] : 'NULL';
+        $vProd         = (isset($dados['vProd']) && is_numeric($dados['vProd'])) ? $dados['vProd'] : 'NULL';
+        $qTrib         = (isset($dados['qTrib']) && is_numeric($dados['qTrib'])) ? $dados['qTrib'] : 'NULL';
+        $vUnTrib       = (isset($dados['vUnTrib']) && is_numeric($dados['vUnTrib'])) ? $dados['vUnTrib'] : 'NULL';
+        $ICMS_vBC      = (isset($dados['ICMS_vBC']) && is_numeric($dados['ICMS_vBC'])) ? $dados['ICMS_vBC'] : 'NULL';
+        $ICMS_pICMS    = (isset($dados['ICMS_pICMS']) && is_numeric($dados['ICMS_pICMS'])) ? $dados['ICMS_pICMS'] : 'NULL';
+        $ICMS_vICMS    = (isset($dados['ICMS_vICMS']) && is_numeric($dados['ICMS_vICMS'])) ? $dados['ICMS_vICMS'] : 'NULL';
+        $pr_mva_nf     = (isset($dados['pr_mva_nf']) && is_numeric($dados['pr_mva_nf'])) ? $dados['pr_mva_nf'] : 'NULL';
+        $pr_mva_calc   = (isset($dados['pr_mva_calc']) && is_numeric($dados['pr_mva_calc'])) ? $dados['pr_mva_calc'] : 'NULL';
+        $vl_base_st    = (isset($dados['vl_base_st']) && is_numeric($dados['vl_base_st'])) ? $dados['vl_base_st'] : 'NULL';
+        $base_st_calc  = (isset($dados['base_st_calc']) && is_numeric($dados['base_st_calc'])) ? $dados['base_st_calc'] : 'NULL';
+        $icms_st_calc  = (isset($dados['icms_st_calc']) && is_numeric($dados['icms_st_calc'])) ? $dados['icms_st_calc'] : 'NULL';
+        $pr_icms_danfe = (isset($dados['pr_icms_danfe']) && is_numeric($dados['pr_icms_danfe'])) ? $dados['pr_icms_danfe'] : 'NULL';
+        $vl_ipi        = (isset($dados['vl_ipi']) && is_numeric($dados['vl_ipi'])) ? $dados['vl_ipi'] : 'NULL';
+        $pr_icms_st    = (isset($dados['pr_icms_st']) && is_numeric($dados['pr_icms_st'])) ? $dados['pr_icms_st'] : 'NULL';
+        $vl_icms_st    = (isset($dados['vl_icms_st']) && is_numeric($dados['vl_icms_st'])) ? $dados['vl_icms_st'] : 'NULL';
+        $det_nItem    = (isset($dados['det_nItem']) && is_numeric($dados['det_nItem'])) ? (int)$dados['det_nItem'] : 'NULL';
+        $id_usuarioi  = (isset($dados['id_usuarioi']) && is_numeric($dados['id_usuarioi'])) ? (int)$dados['id_usuarioi'] : '1';
+        $id_usuarioa  = (isset($dados['id_usuarioa']) && is_numeric($dados['id_usuarioa'])) ? (int)$dados['id_usuarioa'] : 'NULL';
+        $cd_cfopvar   = (isset($dados['cd_cfopvar']) && is_numeric($dados['cd_cfopvar'])) ? (int)$dados['cd_cfopvar'] : (isset($dados['cd_cfop']) ? (int)$dados['cd_cfop'] : 'NULL');
+        $dt_inclusao  = (isset($dados['dt_inclusao']) && trim($dados['dt_inclusao']) !== '') ? "'" . pg_escape_string(trim($dados['dt_inclusao'])) . "'" : 'NOW()';
+        $dt_alteracao = (isset($dados['dt_alteracao']) && trim($dados['dt_alteracao']) !== '') ? "'" . pg_escape_string(trim($dados['dt_alteracao'])) . "'" : 'NULL';
+        $id_nfedetnitem = "nextval('gftnfedetnitem_id_nfedetnitem_seq'::regclass)";
+
+        // 4. Montagem do SQL com aspas duplas escapadas \"coluna\"
+        $sql = "INSERT INTO gftnfedetnitem (" .
+            "\"infNFed\", \"det_nItem\", \"cProd\", \"xProd\", \"NCM\", \"CFOP\", \"uCom\", \"qCom\", \"vUnCom\", \"vProd\", " .
+            "\"cEANTrib\", \"uTrib\", \"qTrib\", \"vUnTrib\", \"indTot\", \"ICMS_orig\", \"ICMS_CST\", \"ICMS_modBc\", \"ICMS_vBC\", " .
+            "\"ICMS_plCMS\", \"ICMS_vlCMS\", \"IPI_cEnq\", \"IPI_CST\", \"PIS_CST\", \"COFINS_CST\", \"situacao\", \"id_usuarioi\", " .
+            "\"dt_inclusao\", \"id_usuarioa\", \"dt_alteracao\", \"ncm_item\", \"cd_cfopvar\", \"cd_item_fab\", \"cd_origem\", " .
+            "\"pr_mva_nf\", \"pr_mva_calc\", \"vl_base_st\", \"base_st_calc\", \"icms_st_calc\", \"pr_icms_danfe\", \"vl_ipi\", " .
+            "\"pr_icms_st\", \"id_nfedetnitem\", \"vl_icms_st\", \"nr_pedido\"" .
+            ") VALUES (" .
+            $infNFed . ", " . $det_nItem . ", " . $cProd . ", " . $xProd . ", " . $NCM . ", " . $CFOP . ", " . $uCom . ", " . $qCom . ", " . $vUnCom . ", " . $vProd . ", " .
+            $cEANTrib . ", " . $uTrib . ", " . $qTrib . ", " . $vUnTrib . ", " . $indTot . ", " . $ICMS_orig . ", " . $ICMS_CST . ", " . $ICMS_modBC . ", " . $ICMS_vBC . ", " .
+            $ICMS_pICMS . ", " . $ICMS_vICMS . ", " . $IPI_cEnq . ", " . $IPI_CST . ", " . $PIS_CST . ", " . $COFINS_CST . ", " . $situacao . ", " . $id_usuarioi . ", " .
+            $dt_inclusao . ", " . $id_usuarioa . ", " . $dt_alteracao . ", " . $ncm_item . ", " . $cd_cfopvar . ", " . $cd_item_fab . ", " . $cd_origem . ", " .
+            $pr_mva_nf . ", " . $pr_mva_calc . ", " . $vl_base_st . ", " . $base_st_calc . ", " . $icms_st_calc . ", " . $pr_icms_danfe . ", " . $vl_ipi . ", " .
+            $pr_icms_st . ", " . $id_nfedetnitem . ", " . $vl_icms_st . ", " . $nr_pedido . 
+            ")";
+
         $rs = $this->con->execute($sql);
         return $rs;
     }
