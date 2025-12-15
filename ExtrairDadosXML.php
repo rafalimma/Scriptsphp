@@ -4,15 +4,26 @@
 @ini_set("memory_limit", "1024M");
 @session_start();
 
-$_SESSION["DIR_ROOT"] = __DIR__;
-$_SESSION["DIR_ROOT"] = str_replace("\scripts", "", $_SESSION["DIR_ROOT"]);
-$_SESSION["DIR_ROOT"] = str_replace("/scripts", "", $_SESSION["DIR_ROOT"]);
-$_SESSION["HTTP_ROOT"] = "http://" . str_replace("index.php", "", $_SERVER["HTTP_HOST"] . $_SERVER["PHP_SELF"]);
-$_SESSION["HTTP_ROOT"] = "http://" . str_replace("relaciona_notas.php", "", $_SERVER["HTTP_HOST"] . $_SERVER["PHP_SELF"]);
+// --- CORREÇÃO DO CÁLCULO DE CAMINHOS ---
+
+// 1. Define a raiz do script: /caminho/do/projeto/scripts/fiscalio
+$script_dir = __DIR__; 
+
+// 2. Sobe dois níveis para encontrar a raiz do projeto (removendo '/fiscalio' e '/scripts')
+// dirname($script_dir) -> /caminho/do/projeto/scripts
+// dirname(dirname($script_dir)) -> /caminho/do/projeto
+$_SESSION["DIR_ROOT"] = dirname(dirname($script_dir));
+
+// 3. Define o caminho do arquivo de configuração
 $_SESSION["CONFIG_FILE"] = $_SESSION["DIR_ROOT"] . "/config/config.php";
+
+// 4. Correção da raiz HTTP (Mantendo o cálculo para o diretório atual)
+// Assumindo que você quer a URL até 'fiscalio/'
+$_SESSION["HTTP_ROOT"] = "http://" . $_SERVER["HTTP_HOST"] . dirname($_SERVER["PHP_SELF"]) . "/";
 
 @require_once('XpathsNfesTables.php');
 @require_once('relaciona_notas.php');
+@require_once('SalvaDadosDANFe.php');
 
 
 function ExtraiDadosXML($xpathProcessor, $tabela) {
@@ -76,6 +87,7 @@ function ExtraiDadosXML($xpathProcessor, $tabela) {
 }
 
 function ExtraiItensNotaXML($xpathProcessor, $mapaColunas) {
+
     // A função recebe o processador XPath e o array de XPaths (mapaColunas)
     
     $itensExtraidos = [];
@@ -130,6 +142,8 @@ function ExtraiItensNotaXML($xpathProcessor, $mapaColunas) {
         $dadosItem = AdicionaCamposPadraoItem($dadosItem); 
         
         // 4. Adiciona o item completo ao array principal
+        $salvaItensnota = new SalvaDadosNota;
+        $salvaItensnota->popularGftnfedetnitem($dadosItem);
         $itensExtraidos[] = $dadosItem;
     }
     
